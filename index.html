@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthMate Disease Prediction</title>
+</head>
+<body>
+    <h1>HealthMate Disease Prediction</h1>
+    <form id="symptomForm">
+        <label for="first_symptom">Select First Symptom:</label>
+        <select id="first_symptom" name="first_symptom">
+            {% for symptom in symptoms %}
+                <option value="{{ symptom }}">{{ symptom }}</option>
+            {% endfor %}
+        </select>
+        <br><br>
+
+        <label for="second_symptom">Select Second Symptom:</label>
+        <select id="second_symptom" name="second_symptom" disabled>
+            <option value="">-- Select --</option>
+        </select>
+        <br><br>
+
+        <label for="third_symptom">Select Third Symptom:</label>
+        <select id="third_symptom" name="third_symptom" disabled>
+            <option value="">-- Select --</option>
+        </select>
+        <br><br>
+
+        <button type="button" onclick="predictDisease()">Predict Disease</button>
+    </form>
+
+    <h2>Predicted Disease:</h2>
+    <div id="predictionResult"></div>
+
+    <h2>Recommended Doctor Specialization:</h2>
+    <div id="specializationResult"></div>
+
+    <script>
+        const firstSymptomSelect = document.getElementById('first_symptom');
+        const secondSymptomSelect = document.getElementById('second_symptom');
+        const thirdSymptomSelect = document.getElementById('third_symptom');
+
+        // Function to update the second dropdown
+        firstSymptomSelect.addEventListener('change', async () => {
+            const firstSymptom = firstSymptomSelect.value;
+            if (!firstSymptom) return;
+
+            try {
+                const response = await fetch('/get_second_options', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `first_symptom=${firstSymptom}`,
+                });
+                const data = await response.json();
+
+                // Clear and populate the second dropdown
+                secondSymptomSelect.innerHTML = '<option value="">-- Select --</option>';
+                data.second_options.forEach(option => {
+                    secondSymptomSelect.innerHTML += `<option value="${option}">${option}</option>`;
+                });
+                secondSymptomSelect.disabled = false;
+            } catch (error) {
+                console.error('Error fetching second options:', error);
+            }
+        });
+
+        // Function to update the third dropdown
+        secondSymptomSelect.addEventListener('change', async () => {
+            const firstSymptom = firstSymptomSelect.value;
+            const secondSymptom = secondSymptomSelect.value;
+            if (!firstSymptom || !secondSymptom) return;
+
+            try {
+                const response = await fetch('/get_third_options', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `first_symptom=${firstSymptom}&second_symptom=${secondSymptom}`,
+                });
+                const data = await response.json();
+
+                // Clear and populate the third dropdown
+                thirdSymptomSelect.innerHTML = '<option value="">-- Select --</option>';
+                data.third_options.forEach(option => {
+                    thirdSymptomSelect.innerHTML += `<option value="${option}">${option}</option>`;
+                });
+                thirdSymptomSelect.disabled = false;
+            } catch (error) {
+                console.error('Error fetching third options:', error);
+            }
+        });
+
+        // Function to predict the disease
+        async function predictDisease() {
+            const selectedSymptoms = [
+                firstSymptomSelect.value,
+                secondSymptomSelect.value,
+                thirdSymptomSelect.value
+            ].filter(symptom => symptom); // Remove empty values
+
+            if (selectedSymptoms.length === 0) {
+                alert('Please select at least one symptom.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `selected_symptoms=${selectedSymptoms.join('&selected_symptoms=')}`,
+                });
+                const data = await response.json();
+
+                // Display predicted diseases
+                document.getElementById('predictionResult').innerText = data.predicted_diseases.join(', ');
+
+                // Display recommended specialization
+                document.getElementById('specializationResult').innerText = data.specialized_fields.join(', ');
+            } catch (error) {
+                console.error('Error predicting disease:', error);
+            }
+        }
+    </script>
+</body>
+</html>
