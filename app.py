@@ -77,6 +77,6 @@ def predict_disease(selected_symptoms):
         possible_diseases.intersection_update(symptom_to_diseases[symptom])
     return list(possible_diseases)
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     PORT=os.environ.get('PORT', 5000)
     app.run(host='0.0.0.0', port=PORT)
